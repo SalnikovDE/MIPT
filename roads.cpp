@@ -27,7 +27,7 @@ protected:
     size_t vertex_count, edges_count;
     bool is_directed;
 
-    virtual std::vector<Vertex> getAllNeighbours(Vertex v) const = 0;
+    virtual std::vector<Vertex> getAllNeighbours(const Vertex &v) const = 0;
 
 };
 class AdjListGraph: public Graph {
@@ -60,7 +60,7 @@ public:
     };
 
 private:
-    virtual std::vector<Vertex> getAllNeighbours(Vertex v) const override{
+    virtual std::vector<Vertex> getAllNeighbours(const Vertex &v) const override{
         return std::vector<Vertex>();
     }
     std::vector<std::vector<Vertex>> Vertexes;
