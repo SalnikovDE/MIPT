@@ -35,6 +35,7 @@ public:
         Vertexes.resize(vertex_count);
     }
     virtual void addEdge(const Vertex & start, const Vertex & finish) override {
+        Graph::addEdge(start, finish);
         Vertexes[start].push_back(finish);
         if(!is_directed) {
             Vertexes[finish].push_back(start);
