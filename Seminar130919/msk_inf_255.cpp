@@ -80,6 +80,9 @@ private:
             throw std::out_of_range("wrong matrix size");
         }
         for (Vertex i = 0; i < matrix.size(); i++) {
+            if (matrix[i].size() != get_vertex_count()) {
+                throw std::out_of_range("wrong matrix size");
+            }
             for (Vertex j = 0; j < matrix[i].size(); j++) {
                 if (matrix[i][j] != 0) {
                     if (j >= i || is_directed) {
@@ -98,12 +101,12 @@ public:
 
 };
 namespace GraphAlgorithms {
-    enum VertexColours {
+    enum vertexColours {
         white, gray, black
     };
 
     void dfs_find_components(const Graph::Vertex &v, const Graph &graph,
-                             std::vector<VertexColours> &colours, std::vector<Graph::Vertex> &component) {
+                             std::vector<vertexColours> &colours, std::vector<Graph::Vertex> &component) {
         colours[v] = gray;
         component.push_back(v);
         for (auto i : graph.get_all_neighbours(v)) {
@@ -116,7 +119,7 @@ namespace GraphAlgorithms {
 
     std::vector<std::vector<Graph::Vertex>> find_components(const Graph &graph) {
         std::vector<std::vector<Graph::Vertex>> result;
-        std::vector<VertexColours> colours(graph.get_vertex_count(), white);
+        std::vector<vertexColours> colours(graph.get_vertex_count(), white);
         for (Graph::Vertex i = 0; i < graph.get_vertex_count(); i++) {
             if (colours[i] == white) {
                 result.push_back(std::vector<Graph::Vertex>());
@@ -129,9 +132,10 @@ namespace GraphAlgorithms {
 
     std::vector<Graph::Vertex>
     find_shortest_way_bfs(const AdjListGraph &graph, const Graph::Vertex &start, const Graph::Vertex &finish) {
+        const int NOT_SET = -1;
         std::queue<Graph::Vertex> to_visit;
         std::vector<Graph::Vertex> ancestor(graph.get_vertex_count());
-        std::vector<int> distance(graph.get_vertex_count(), -1);
+        std::vector<int> distance(graph.get_vertex_count(), NOT_SET);
         to_visit.push(start);
         distance[start] = 0;
 
@@ -139,7 +143,7 @@ namespace GraphAlgorithms {
             auto cur = to_visit.front();
             to_visit.pop();
             for (const auto &n : graph.get_all_neighbours(cur)) {
-                if (distance[n] == -1) {
+                if (distance[n] == NOT_SET) {
                     distance[n] = distance[cur] + 1;
                     ancestor[n] = cur;
                     to_visit.push(n);
@@ -158,6 +162,20 @@ namespace GraphAlgorithms {
     std::vector<std::vector<Graph::Vertex>> find_shortest_way_dijkstra(const WeightedAgjListGraph &graph) {}
 };
 
+void
+add(Graph &g, int i_start, int j_start, int i_finish, int j_finish, const std::vector<std::vector<char>> &world_map,
+    int &fake) {
+
+    if (world_map[i_finish][j_finish] == '#') {
+        return;
+    } else if (world_map[i_finish][j_finish] == '.') {
+        g.add_edge(i_start * world_map[0].size() + j_start, i_finish * world_map[0].size() + j_finish);
+    } else if (world_map[i_finish][j_finish] == 'W') {
+        g.add_edge(i_start * world_map[0].size() + j_start, fake);
+        g.add_edge(fake, i_finish * world_map[0].size() + j_finish);
+        fake++;
+    }
+}
 
 int main() {
     int n;

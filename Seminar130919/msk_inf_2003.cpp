@@ -3,9 +3,10 @@
 #include <queue>
 #include <algorithm>
 #include <exception>
+#include <cstdlib>
+#include <string>
 
 /*
- * !! Еще не отдебажил !!
  Карта мира в компьютерной игре “Цивилизация” версии 1 представляет собой прямоугольник, разбитый на квадратики.
  Каждый квадратик может иметь один из нескольких возможных рельефов, для простоты ограничимся тремя видами
  рельефов - поле, лес и вода. Поселенец перемещается по карте, при этом на перемещение в клетку, занятую полем,
@@ -88,6 +89,9 @@ private:
             throw std::out_of_range("wrong matrix size");
         }
         for (Vertex i = 0; i < matrix.size(); i++) {
+            if (matrix[i].size() != get_vertex_count()) {
+                throw std::out_of_range("wrong matrix size");
+            }
             for (Vertex j = 0; j < matrix[i].size(); j++) {
                 if (matrix[i][j] != 0) {
                     if (j >= i || is_directed) {
@@ -106,12 +110,12 @@ public:
 
 };
 namespace GraphAlgorithms {
-    enum VertexColours {
+    enum vertexColours {
         white, gray, black
     };
 
     void dfs_find_components(const Graph::Vertex &v, const Graph &graph,
-                             std::vector<VertexColours> &colours, std::vector<Graph::Vertex> &component) {
+                             std::vector<vertexColours> &colours, std::vector<Graph::Vertex> &component) {
         colours[v] = gray;
         component.push_back(v);
         for (auto i : graph.get_all_neighbours(v)) {
@@ -124,7 +128,7 @@ namespace GraphAlgorithms {
 
     std::vector<std::vector<Graph::Vertex>> find_components(const Graph &graph) {
         std::vector<std::vector<Graph::Vertex>> result;
-        std::vector<VertexColours> colours(graph.get_vertex_count(), white);
+        std::vector<vertexColours> colours(graph.get_vertex_count(), white);
         for (Graph::Vertex i = 0; i < graph.get_vertex_count(); i++) {
             if (colours[i] == white) {
                 result.push_back(std::vector<Graph::Vertex>());
@@ -137,17 +141,19 @@ namespace GraphAlgorithms {
 
     std::vector<Graph::Vertex>
     find_shortest_way_bfs(const AdjListGraph &graph, const Graph::Vertex &start, const Graph::Vertex &finish) {
+        const int NOT_SET = -1;
         std::queue<Graph::Vertex> to_visit;
         std::vector<Graph::Vertex> ancestor(graph.get_vertex_count());
-        std::vector<int> distance(graph.get_vertex_count(), -1);
+        std::vector<int> distance(graph.get_vertex_count(), NOT_SET);
         to_visit.push(start);
         distance[start] = 0;
 
         while (!to_visit.empty()) {
             auto cur = to_visit.front();
+
             to_visit.pop();
             for (const auto &n : graph.get_all_neighbours(cur)) {
-                if (distance[n] == -1) {
+                if (distance[n] == NOT_SET) {
                     distance[n] = distance[cur] + 1;
                     ancestor[n] = cur;
                     to_visit.push(n);
@@ -165,10 +171,10 @@ namespace GraphAlgorithms {
 
     std::vector<std::vector<Graph::Vertex>> find_shortest_way_dijkstra(const WeightedAgjListGraph &graph) {}
 };
-
 void
 add(Graph &g, int i_start, int j_start, int i_finish, int j_finish, const std::vector<std::vector<char>> &world_map,
     int &fake) {
+
     if (world_map[i_finish][j_finish] == '#') {
         return;
     } else if (world_map[i_finish][j_finish] == '.') {
@@ -177,6 +183,21 @@ add(Graph &g, int i_start, int j_start, int i_finish, int j_finish, const std::v
         g.add_edge(i_start * world_map[0].size() + j_start, fake);
         g.add_edge(fake, i_finish * world_map[0].size() + j_finish);
         fake++;
+    }
+}
+
+char dir(int a, int b, int columns) {
+    if (b - a == columns) {
+        return 'S';
+    }
+    if (b - a == -columns) {
+        return 'N';
+    }
+    if (b - a == 1) {
+        return 'E';
+    }
+    if (b - a == -1) {
+        return 'W';
     }
 }
 
@@ -211,9 +232,9 @@ int main() {
         }
     }
 
-    AdjListGraph g(max_real_vertex + 4 * woods_count + 1, false);
+    AdjListGraph g(max_real_vertex + 4 * woods_count + 1, true);
 
-    int fake = max_real_vertex;
+    int fake = max_real_vertex + 1;
     for (int i = 0; i < strings; i++) {
         for (int j = 0; j < columns; j++) {
             if (i + 1 < strings) {
@@ -222,7 +243,7 @@ int main() {
             if (i - 1 >= 0) {
                 add(g, i, j, i - 1, j, world_map, fake);
             }
-            if (i + 1 < columns) {
+            if (j + 1 < columns) {
                 add(g, i, j, i, j + 1, world_map, fake);
             }
             if (j - 1 >= 0) {
@@ -230,6 +251,19 @@ int main() {
             }
         }
     }
-    std::cout << GraphAlgorithms::find_shortest_way_bfs(g, j_start + i_start * columns,
-                                                        j_finish + i_finish * columns).size();
+    auto result = GraphAlgorithms::find_shortest_way_bfs(g, j_start + i_start * columns,
+                                                         j_finish + i_finish * columns);
+    if (result.size() == 0) {
+        std::cout << -1;
+    } else {
+        std::cout << result.size() - 1 << std::endl;
+        for (int i = 0; i < result.size() - 1; i++) {
+            if (result[i + 1] > max_real_vertex) {
+                std::cout << dir (result[i], result[i + 2], columns);
+                i++;
+            } else {
+                std::cout << dir (result[i], result[i + 1], columns);
+            }
+        }
+    }
 }
