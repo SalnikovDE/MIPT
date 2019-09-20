@@ -3,72 +3,106 @@
 #include <queue>
 #include <algorithm>
 
+/*
+ Дан неориентированный невзвешенный граф. Для него вам необходимо найти количество вершин,
+ лежащих в одной компоненте связности с данной вершиной (считая эту вершину).
+ */
+
 class Graph {
 public:
     typedef size_t Vertex;
+
     Graph(size_t _vertex_count, bool _is_directed) {
         is_directed = _is_directed;
         vertex_count = _vertex_count;
         edges_count = 0;
     }
 
-    bool getIsDirected() {
+    bool directed() {
         return is_directed;
     }
-    size_t getVertexCount() const {
+
+    virtual size_t get_vertex_deg(const Vertex &v) const = 0;
+
+    size_t get_vertex_count() const {
         return vertex_count;
     }
-    size_t getEdgesCount() const {
+
+    size_t get_edges_count() const {
         return edges_count;
     }
 
-    virtual void addEdge(const Vertex & start, const Vertex & finish) {
+    virtual void add_edge(const Vertex &start, const Vertex &finish) {
         edges_count++;
     }
 
     virtual std::vector<Vertex> get_all_neighbours(const Vertex &v) const = 0;
+
 protected:
     size_t vertex_count, edges_count;
     bool is_directed;
 };
 
-class AdjListGraph: public Graph {
+class AdjListGraph : public Graph {
 public:
-    AdjListGraph(size_t _vertex_count, bool _is_directed):Graph(_vertex_count, _is_directed) {
+    AdjListGraph(size_t _vertex_count, bool _is_directed) : Graph(_vertex_count, _is_directed) {
         Vertexes.resize(vertex_count);
     }
-    virtual void addEdge(const Vertex & start, const Vertex & finish) override {
-        Graph::addEdge(start, finish);
+
+    AdjListGraph(bool _is_directed, const std::vector<std::vector<int>> &matrix) : Graph(
+            matrix.size(), _is_directed) {
+        Vertexes.resize(vertex_count);
+        read_matrix(matrix);
+    }
+
+    virtual void add_edge(const Vertex &start, const Vertex &finish) override {
+        Graph::add_edge(start, finish);
         Vertexes[start].push_back(finish);
-        if(!is_directed) {
+        if (!is_directed) {
             Vertexes[finish].push_back(start);
         }
     }
 
-    size_t GetVertexDeg(Vertex v) {
+    virtual size_t get_vertex_deg(const Vertex &v) const override {
         return Vertexes[v].size();
     }
 
-    void ReadMatrix (const std::vector<std::vector<int>> &matrix) {
-        for (Vertex i = 0; i < matrix.size(); i++){
+
+    virtual std::vector<Vertex> get_all_neighbours(const Vertex &v) const override {
+        return Vertexes[v];
+    }
+
+private:
+    std::vector<std::vector<Vertex>> Vertexes;
+
+    void read_matrix(const std::vector<std::vector<int>> &matrix) {
+        if (matrix.size() != get_vertex_count()) {
+            throw std::out_of_range("wrong matrix size");
+        }
+        for (Vertex i = 0; i < matrix.size(); i++) {
             for (Vertex j = 0; j < matrix[i].size(); j++) {
                 if (matrix[i][j] != 0) {
-                    if(j >= i || is_directed) {
-                        addEdge(i, j);
+                    if (j >= i || is_directed) {
+                        add_edge(i, j);
                     }
                 }
             }
         }
     };
-    virtual std::vector<Vertex> get_all_neighbours(const Vertex &v) const override{
-        return Vertexes[v];
-    }
+};
+
+class WeightedAgjListGraph : public AdjListGraph {
 private:
-    std::vector<std::vector<Vertex>> Vertexes;
+    std::vector<int> weight;
+public:
+
 };
 namespace GraphAlgorithms {
-    enum VertexColours{white, gray, black};
-    void dfs_find_components(const Graph::Vertex &v, const AdjListGraph &graph,
+    enum VertexColours {
+        white, gray, black
+    };
+
+    void dfs_find_components(const Graph::Vertex &v, const Graph &graph,
                              std::vector<VertexColours> &colours, std::vector<Graph::Vertex> &component) {
         colours[v] = gray;
         component.push_back(v);
@@ -80,12 +114,12 @@ namespace GraphAlgorithms {
         colours[v] = black;
     }
 
-    std::vector<std::vector<Graph::Vertex>> find_components(const AdjListGraph & graph) {
+    std::vector<std::vector<Graph::Vertex>> find_components(const Graph &graph) {
         std::vector<std::vector<Graph::Vertex>> result;
-        std::vector<VertexColours> colours(graph.getVertexCount(), white);
-        for (Graph::Vertex i = 0; i < graph.getVertexCount(); i++) {
+        std::vector<VertexColours> colours(graph.get_vertex_count(), white);
+        for (Graph::Vertex i = 0; i < graph.get_vertex_count(); i++) {
             if (colours[i] == white) {
-                result.push_back(std::vector<Graph::Vertex> ());
+                result.push_back(std::vector<Graph::Vertex>());
                 dfs_find_components(i, graph, colours, result.back());
             }
         }
@@ -93,15 +127,19 @@ namespace GraphAlgorithms {
         return result;
     }
 
+    std::vector<std::vector<Graph::Vertex>> find_shortest_way_bfs(const AdjListGraph &graph) {
 
+    }
+
+    std::vector<std::vector<Graph::Vertex>> find_shortest_way_dijkstra(const WeightedAgjListGraph &graph) {}
 };
+
 
 
 int main() {
     int n, k;
     std::vector<std::vector<int>> v;
     std::cin >> n >> k;
-    AdjListGraph g (n, false);
     for (int i = 0; i < n; i++) {
         v.emplace_back(std::vector<int>());
         for (int j = 0; j < n; j++) {
@@ -110,7 +148,8 @@ int main() {
             v[i].push_back(state);
         }
     }
-    g.ReadMatrix(v);
+
+    AdjListGraph g (false, v);
     auto result = GraphAlgorithms::find_components(g);
 
     for (const auto &i : result) {

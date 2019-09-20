@@ -1,12 +1,12 @@
 #include <iostream>
 #include <vector>
-/*
-В подземелье M тоннелей и N перекрестков, каждый тоннель соединяет какие-то два перекрестка.
- Мышиный король решил поставить по светофору в каждом тоннеле перед каждым перекрестком. Напишите программу,
- которая посчитает, сколько светофоров должно быть установлено на каждом из перекрестков.
- Перекрестки пронумерованы числами от 1 до N.
-*/
+#include <queue>
+#include <algorithm>
+#include <exception>
 
+/*
+ В неориентированном графе требуется найти минимальный путь между двумя вершинами.
+*/
 
 class Graph {
 public:
@@ -127,8 +127,32 @@ namespace GraphAlgorithms {
         return result;
     }
 
-    std::vector<std::vector<Graph::Vertex>> find_shortest_way_bfs(const AdjListGraph &graph) {
+    std::vector<Graph::Vertex>
+    find_shortest_way_bfs(const AdjListGraph &graph, const Graph::Vertex &start, const Graph::Vertex &finish) {
+        std::queue<Graph::Vertex> to_visit;
+        std::vector<Graph::Vertex> ancestor(graph.get_vertex_count());
+        std::vector<int> distance(graph.get_vertex_count(), -1);
+        to_visit.push(start);
+        distance[start] = 0;
 
+        while (!to_visit.empty()) {
+            auto cur = to_visit.front();
+            to_visit.pop();
+            for (const auto &n : graph.get_all_neighbours(cur)) {
+                if (distance[n] == -1) {
+                    distance[n] = distance[cur] + 1;
+                    ancestor[n] = cur;
+                    to_visit.push(n);
+                }
+            }
+        }
+        std::vector<Graph::Vertex> result(distance[finish] + 1);
+        auto cur = finish;
+        for (int i = result.size() - 1; i >= 0; i--) {
+            result[i] = cur;
+            cur = ancestor[cur];
+        }
+        return result;
     }
 
     std::vector<std::vector<Graph::Vertex>> find_shortest_way_dijkstra(const WeightedAgjListGraph &graph) {}
@@ -136,18 +160,31 @@ namespace GraphAlgorithms {
 
 
 int main() {
-    int n, m;
-    std::cin >> n >> m;
-    AdjListGraph v(n, false);
-    for (int i = 0; i < m; i++) {
-        Graph::Vertex s, f;
-        std::cin >> s >> f;
-        v.addEdge(s - 1, f - 1);
-    }
-
+    int n;
+    std::vector<std::vector<int>> v;
+    std::cin >> n;
     for (int i = 0; i < n; i++) {
-        std::cout << v.GetVertexDeg(i) << std::endl;
+        v.emplace_back(std::vector<int>());
+        for (int j = 0; j < n; j++) {
+            int state;
+            std::cin >> state;
+            v[i].push_back(state);
+        }
     }
-    return 0;
-}
 
+    AdjListGraph g(false, v);
+    Graph::Vertex s, f;
+    std::cin >> s >> f;
+    auto result = GraphAlgorithms::find_shortest_way_bfs(g, s - 1, f - 1);
+
+    if (result.size() == 0) {
+        std::cout << -1;;
+    } else if (result.size() == 1) {
+        std::cout << 0;
+    } else {
+        std::cout << result.size() - 1 << std::endl;
+        for (const auto &i : result) {
+            std::cout << i + 1 << ' ';
+        }
+    }
+}
