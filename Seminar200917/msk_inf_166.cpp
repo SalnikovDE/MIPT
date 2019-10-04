@@ -7,16 +7,12 @@
 #include <string>
 
 /*
- Карта мира в компьютерной игре “Цивилизация” версии 1 представляет собой прямоугольник, разбитый на квадратики.
- Каждый квадратик может иметь один из нескольких возможных рельефов, для простоты ограничимся тремя видами
- рельефов - поле, лес и вода. Поселенец перемещается по карте, при этом на перемещение в клетку, занятую полем,
- необходима одна единица времени, на перемещение в лес - две единицы времени, а перемещаться в клетку с водой нельзя.
+Группа солдат-новобранцев прибыла в армейскую часть N666. После знакомства с прапорщиком стало очевидно, что от работ на кухне по очистке картофеля спасти солдат может только чудо.
 
-У вас есть один поселенец, вы определили место, где нужно построить город, чтобы как можно скорее завладеть всем миром.
- Найдите маршрут переселенца, приводящий его в место строительства города, требующий минимального времени. Н
- а каждом ходе переселенец может перемещаться в клетку, имеющую общую сторону с той клеткой, где он сейчас находится.
+Прапорщик, будучи не в состоянии запомнить фамилии, пронумеровал новобранцев от 1 до N. После этого он велел им построиться по росту (начиная с самого высокого). С этой несложной задачей могут справиться даже совсем необученные новобранцы, да вот беда, прапорщик уверил себя, что знает про некоторых солдат, кто из них кого выше, и это далеко не всегда соответствует истине.
+
+После трех дней обучения новобранцам удалось выяснить, что знает (а точнее, думает, что знает) прапорщик. Помогите им, используя эти знания, построиться так, чтобы товарищ прапорщик остался доволен.
 */
-
 
 class Graph {
 public:
@@ -203,7 +199,7 @@ namespace GraphAlgorithms {
         }
         std::vector<Graph::Vertex> result;
         auto cur = finish;
-        for (int i = 0; i < distance[finish] + 1; i++) {
+        for (int i = 0; i <= distance[finish] + 1; i++) {
             result.push_back(cur);
             cur = ancestor[cur];
         }
@@ -226,99 +222,27 @@ namespace GraphAlgorithms {
 
 };
 
-void
-add(Graph &g, int i_start, int j_start, int i_finish, int j_finish, const std::vector<std::vector<char>> &world_map,
-    int &fake) {
-
-    if (world_map[i_finish][j_finish] == '#') {
-        return;
-    } else if (world_map[i_finish][j_finish] == '.') {
-        g.add_edge(i_start * world_map[0].size() + j_start, i_finish * world_map[0].size() + j_finish);
-    } else if (world_map[i_finish][j_finish] == 'W') {
-        g.add_edge(i_start * world_map[0].size() + j_start, fake);
-        g.add_edge(fake, i_finish * world_map[0].size() + j_finish);
-        fake++;
-    }
-}
-
-char get_direction(int a, int b, int cnt_columns) {
-    if (b - a == cnt_columns) {
-        return 'S';
-    }
-    if (b - a == -cnt_columns) {
-        return 'N';
-    }
-    if (b - a == 1) {
-        return 'E';
-    }
-    if (b - a == -1) {
-        return 'W';
-    }
-}
-
-int get_graph_vertex(int i, int j, int cnt_columns) {
-    return j + i * cnt_columns;
-}
 
 int main() {
-    int cnt_raws, cnt_columns;
-    int i_start, j_start;
-    int i_finish, j_finish;
+    int N, M;
+    std::cin >> N >> M;
+    AdjListGraph g(N, true);
 
-    std::cin >> cnt_raws >> cnt_columns;
-    std::cin >> i_start >> j_start;
-    std::cin >> i_finish >> j_finish;
+    for (int i = 0; i < M; i++) {
+        int A, B;
+        std::cin >> A >> B;
 
-    i_start--;
-    i_finish--;
-    j_start--;
-    j_finish--;
-
-    int max_real_vertex = cnt_raws * cnt_columns - 1;
-    int woods_count = 0;
-    std::vector<std::vector<char>> world_map(cnt_raws, std::vector<char>(cnt_columns));
-
-    for (auto &s : world_map) {
-        for (auto &p : s) {
-            std::cin >> p;
-            if (p == 'W') {
-                woods_count++;
-            }
-        }
+        g.add_edge(A - 1, B - 1);
+    }
+    if (GraphAlgorithms::is_cicled(g)) {
+        std::cout << "No";
+        return 0;
     }
 
-    AdjListGraph g(max_real_vertex + 4 * woods_count + 1, true);
-
-    int fake = max_real_vertex + 1;
-    for (int i = 0; i < cnt_raws; i++) {
-        for (int j = 0; j < cnt_columns; j++) {
-            if (i + 1 < cnt_raws) {
-                add(g, i, j, i + 1, j, world_map, fake);
-            }
-            if (i - 1 >= 0) {
-                add(g, i, j, i - 1, j, world_map, fake);
-            }
-            if (j + 1 < cnt_columns) {
-                add(g, i, j, i, j + 1, world_map, fake);
-            }
-            if (j - 1 >= 0) {
-                add(g, i, j, i, j - 1, world_map, fake);
-            }
-        }
-    }
-    auto result = GraphAlgorithms::find_shortest_way_bfs(g, get_graph_vertex(i_start, j_start, cnt_columns),
-                                                         get_graph_vertex(i_finish, j_finish, cnt_columns));
-    if (result.size() == 0) {
-        std::cout << -1;
-    } else {
-        std::cout << result.size() - 1 << std::endl;
-        for (int i = 0; i < result.size() - 1; i++) {
-            if (result[i + 1] > max_real_vertex) {
-                std::cout << get_direction(result[i], result[i + 2], cnt_columns);
-                i++;
-            } else {
-                std::cout << get_direction(result[i], result[i + 1], cnt_columns);
-            }
-        }
+    auto res = GraphAlgorithms::graph_top_sort(g);
+    std::reverse(res.begin(), res.end());
+    std::cout << "Yes" << std::endl;
+    for (auto i : res) {
+        std::cout << i + 1 << ' ';
     }
 }
