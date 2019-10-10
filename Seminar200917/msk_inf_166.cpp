@@ -113,15 +113,15 @@ namespace GraphAlgorithms {
     typedef std::vector<Graph::Vertex> Component;
 
     void dfs_graph_top_sort(Graph::Vertex ver, const Graph &graph, std::vector<vertexColours> &colours,
-                            std::vector<Graph::Vertex> &result) {
+                            std::vector<Graph::Vertex> &top_sort_result) {
         colours[ver] = GRAY;
         for (const Graph::Vertex &v : graph.get_all_neighbours(ver)) {
             if (colours[v] == WHITE) {
-                dfs_graph_top_sort(v, graph, colours, result);
+                dfs_graph_top_sort(v, graph, colours, top_sort_result);
             }
         }
         colours[ver] = BLACK;
-        result.push_back(ver);
+        top_sort_result.push_back(ver);
 
     }
 
@@ -153,16 +153,16 @@ namespace GraphAlgorithms {
     }
 
     std::vector<Component> find_components(const Graph &graph) {
-        std::vector<Component> result;
+        std::vector<Component> connected_components;
         std::vector<vertexColours> colours(graph.get_vertex_count(), WHITE);
         for (Graph::Vertex i = 0; i < graph.get_vertex_count(); i++) {
             if (colours[i] == WHITE) {
-                result.emplace_back(std::vector<Graph::Vertex>());
-                dfs_find_components(i, graph, colours, result.back());
+                connected_components.emplace_back(std::vector<Graph::Vertex>());
+                dfs_find_components(i, graph, colours, connected_components.back());
             }
         }
 
-        return result;
+        return connected_components;
     }
 
     bool is_cicled(const Graph &graph) {
@@ -197,26 +197,26 @@ namespace GraphAlgorithms {
                 }
             }
         }
-        std::vector<Graph::Vertex> result;
+        std::vector<Graph::Vertex> result_path;
         auto cur = finish;
         for (int i = 0; i <= distance[finish] + 1; i++) {
-            result.push_back(cur);
+            result_path.push_back(cur);
             cur = ancestor[cur];
         }
-        std::reverse(result.begin(), result.end());
-        return result;
+        std::reverse(result_path.begin(), result_path.end());
+        return result_path;
     }
 
     std::vector<Graph::Vertex> graph_top_sort(const Graph &graph) {
-        std::vector<Graph::Vertex> result;
+        std::vector<Graph::Vertex> top_sort_result;
         std::vector<vertexColours> colours(graph.get_vertex_count(), WHITE);
         for (Graph::Vertex i = 0; i < graph.get_vertex_count(); i++) {
             if (colours[i] == WHITE) {
-                dfs_graph_top_sort(i, graph, colours, result);
+                dfs_graph_top_sort(i, graph, colours, top_sort_result);
             }
         }
 
-        return result;
+        return top_sort_result;
     }
 
 
@@ -224,15 +224,17 @@ namespace GraphAlgorithms {
 
 
 int main() {
-    int N, M;
-    std::cin >> N >> M;
-    AdjListGraph g(N, true);
+    size_t number_of_soldiers, number_of_relations;
+    std::cin >> number_of_soldiers >> number_of_relations;
+    AdjListGraph g(number_of_soldiers, true);
 
-    for (int i = 0; i < M; i++) {
-        int A, B;
-        std::cin >> A >> B;
+    typedef size_t Soldier;
+    for (int i = 0; i < number_of_relations; i++) {
 
-        g.add_edge(A - 1, B - 1);
+        Soldier higher_soldier, lower_soldier;
+        std::cin >> higher_soldier >> lower_soldier;
+
+        g.add_edge(higher_soldier - 1, lower_soldier - 1);
     }
     if (GraphAlgorithms::is_cicled(g)) {
         std::cout << "No";
